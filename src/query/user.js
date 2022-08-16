@@ -25,7 +25,16 @@ query($token: String){
 }
 `;
 
+const getUserRole = `
+query($token: String){
+  getUserInfo(token: $token) {
+    role
+  }
+}
+`;
+
 module.exports = {
   loginQuery,
-  getUserInfoQuery
+  getUserInfoQuery,
+  getUserRole,
 };

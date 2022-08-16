@@ -6,6 +6,8 @@ query Query($userId: String) {
     date
     address
     phone
+    status
+    shipDate
     products {
       productId
       name
@@ -25,6 +27,8 @@ query Query($orderId: ID) {
     date
     address
     phone
+    status
+    shipDate
     products {
       productId
       name
@@ -65,8 +69,51 @@ mutation Mutation(
 }
 `;
 
+const getAllOrdersQuery = `
+query getAllOrders {
+  getAllOrders {
+    id
+    userId
+    date
+    address
+    phone
+    status
+    shipDate
+    products {
+      productId
+      name
+      quantity
+      price
+      image
+    }
+  }
+}`;
+
+const approveOrderMutation = `
+  mutation approveOrder($id: ID) {
+    approveOrder(id: $id) {
+      id
+      userId  
+      date
+      address
+      phone
+      status
+      shipDate
+      products {
+        productId
+        name
+        quantity
+        price
+        image
+      }
+    }
+  }
+`;
+
 module.exports = {
   getUserOrdersQuery,
   getOrderQuery,
   addOrderMutation,
+  getAllOrdersQuery,
+  approveOrderMutation,
 };

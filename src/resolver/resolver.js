@@ -1,4 +1,9 @@
 require("isomorphic-fetch");
+var md5 = require("blueimp-md5");
+const { AES_KEY } = require("../common/constant");
+const { decryptAES256, isValidCommand } = require("../common/helper");
+const { serviceList } = require("../common/service");
+
 const { URL } = require("../common/URL");
 const {
   userCartQuery,
@@ -16,13 +21,31 @@ const {
   getUserOrdersQuery,
   getOrderQuery,
   addOrderMutation,
+  approveOrderMutation,
+  getAllOrdersQuery,
 } = require("../query/order");
 const { productsQuery, productQuery } = require("../query/product");
 const { loginQuery, getUserInfoQuery } = require("../query/user");
 
 const resolvers = {
   Query: {
-    request: async (parent, args) => {
+    request: async (parent, args, context) => {
+      //Kiểm tra API - check quyền
+      let token;
+      if (context.headers.authorization)
+        token = decryptAES256(AES_KEY, context.headers.authorization);
+      else token = null;
+      const checkValidCommand = await isValidCommand(
+        args.name,
+        args.type,
+        token,
+        serviceList
+      );
+      if (checkValidCommand.isError) {
+        return {
+          data: checkValidCommand,
+        };
+      }
       if (args.name === "user") {
         switch (args.type) {
           case "login":
@@ -36,7 +59,7 @@ const resolvers = {
                 query: loginQuery,
                 variables: {
                   username: args.variables.username,
-                  password: args.variables.password,
+                  password: md5(args.variables.password),
                 },
               }),
             })
@@ -46,7 +69,7 @@ const resolvers = {
                   data: data.data,
                 };
               })
-              .catch((err) => res.json);
+              .catch((err) => err.json());
 
           case "getUserInfo":
             return fetch(URL.USER_SERVICE, {
@@ -58,7 +81,7 @@ const resolvers = {
               body: JSON.stringify({
                 query: getUserInfoQuery,
                 variables: {
-                  token: args.token,
+                  token: token,
                 },
               }),
             })
@@ -95,7 +118,7 @@ const resolvers = {
                   data: data.data,
                 };
               })
-              .catch((err) => res.json);
+              .catch((err) => err.json());
 
           case "product":
             return fetch(URL.PRODUCT_SERVICE, {
@@ -117,7 +140,7 @@ const resolvers = {
                   data: data.data,
                 };
               })
-              .catch((err) => res.json);
+              .catch((err) => err.json());
           default:
             return {
               data: {
@@ -147,7 +170,7 @@ const resolvers = {
                   data: data.data,
                 };
               })
-              .catch((err) => res.json);
+              .catch((err) => err.json());
 
           case "addUserCartProduct":
             return fetch(URL.CART_SERVICE, {
@@ -170,7 +193,7 @@ const resolvers = {
                   data: data.data,
                 };
               })
-              .catch((err) => res.json);
+              .catch((err) => err.json());
 
           case "deleteUserCartProduct":
             return fetch(URL.CART_SERVICE, {
@@ -193,7 +216,7 @@ const resolvers = {
                   data: data.data,
                 };
               })
-              .catch((err) => res.json);
+              .catch((err) => err.json());
 
           case "deleteUserCartProductList":
             return fetch(URL.CART_SERVICE, {
@@ -215,7 +238,7 @@ const resolvers = {
                   data: data.data,
                 };
               })
-              .catch((err) => res.json);
+              .catch((err) => err.json());
           default:
             return {
               data: {
@@ -245,7 +268,7 @@ const resolvers = {
                   data: data.data,
                 };
               })
-              .catch((err) => res.json);
+              .catch((err) => err.json());
 
           case "getOrder":
             return fetch(URL.ORDER_SERVICE, {
@@ -267,7 +290,7 @@ const resolvers = {
                   data: data.data,
                 };
               })
-              .catch((err) => res.json);
+              .catch((err) => err.json());
 
           case "addOrder":
             let cartIdList = args.variables.products.reduce((res, cur) => {
@@ -316,7 +339,73 @@ const resolvers = {
                   data: data.data,
                 };
               })
-              .catch((err) => res.json);
+              .catch((err) => err.json());
+
+          case "getAllOrders":
+            return fetch(URL.ORDER_SERVICE, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Accept: "application/json",
+              },
+              body: JSON.stringify({
+                query: getAllOrdersQuery,
+                variables: {},
+              }),
+            })
+              .then((res) => res.json())
+              .then((data) => {
+                return {
+                  data: data.data,
+                };
+              })
+              .catch((err) => err.json());
+
+          case "approveOrder":
+            return fetch(URL.ORDER_SERVICE, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Accept: "application/json",
+              },
+              body: JSON.stringify({
+                query: approveOrderMutation,
+                variables: {
+                  id: args.variables.id,
+                },
+              }),
+            })
+              .then((res) => res.json())
+              .then(async (data) => {
+                console.log(data.data.approveOrder.userId);
+                let userId = data.data.approveOrder.userId;
+                let title = "Cập nhật đơn hàng";
+                let content = `Đơn hàng ${args.variables.id} của bạn đã được giao thành công`;
+                return fetch(URL.NOTIFICATION_SERVICE, {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    Accept: "application/json",
+                  },
+                  body: JSON.stringify({
+                    query: addNotificationMutation,
+                    variables: {
+                      userId: userId,
+                      title: title,
+                      content: content,
+                    },
+                  }),
+                })
+                  .then((res) => res.json())
+                  .then((data) => ({
+                    data: {
+                      isError: false,
+                      message: "Duyệt đơn hàng thành công",
+                    },
+                  }))
+                  .catch((err) => err.json());
+              })
+              .catch((err) => err.json());
         }
       } else if (args.name === "notification") {
         switch (args.type) {
@@ -340,7 +429,7 @@ const resolvers = {
                   data: data.data,
                 };
               })
-              .catch((err) => res.json);
+              .catch((err) => err.json());
 
           case "addNotification":
             return fetch(URL.NOTIFICATION_SERVICE, {
@@ -364,7 +453,7 @@ const resolvers = {
                   data: data.data,
                 };
               })
-              .catch((err) => res.json);
+              .catch((err) => err.json());
 
           case "markRead":
             return fetch(URL.NOTIFICATION_SERVICE, {
@@ -386,7 +475,7 @@ const resolvers = {
                   data: data.data,
                 };
               })
-              .catch((err) => res.json);
+              .catch((err) => err.json());
 
           case "markReadAll":
             return fetch(URL.NOTIFICATION_SERVICE, {
@@ -408,12 +497,12 @@ const resolvers = {
                   data: data.data,
                 };
               })
-              .catch((err) => res.json);
+              .catch((err) => err.json());
         }
       } else {
         return {
           data: {
-            isError: "Name not exists",
+            isError: "Service name not exists",
           },
         };
       }
