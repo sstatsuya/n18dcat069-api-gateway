@@ -1,7 +1,11 @@
 require("isomorphic-fetch");
 var md5 = require("blueimp-md5");
 const { AES_KEY } = require("../common/constant");
-const { decryptAES256, isValidCommand, encryptAES256 } = require("../common/helper");
+const {
+  decryptAES256,
+  isValidCommand,
+  encryptAES256,
+} = require("../common/helper");
 const { serviceList } = require("../common/service");
 
 const { URL } = require("../common/URL");
@@ -65,20 +69,21 @@ const resolvers = {
             })
               .then((res) => res.json())
               .then((data) => {
-                if (data.data.login.id === null)
-                  return {
-                    data: {
-                      isError: true,
-                      message: "Tài khoản không chính xác",
-                    },
-                  };
-                else {
+                console.log(JSON.stringify(data.data));
+                if (data?.data?.login?.id) {
                   data.data.login.token = encryptAES256(
                     AES_KEY,
                     data.data.login.token
                   );
                   return {
                     data: data.data,
+                  };
+                } else {
+                  return {
+                    data: {
+                      isError: true,
+                      message: "Tài khoản không chính xác",
+                    },
                   };
                 }
               })
