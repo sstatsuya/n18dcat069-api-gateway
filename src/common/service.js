@@ -14,6 +14,11 @@ const serviceList = [
         name: "getUserInfo",
         role: 2,
       },
+      {
+        id: 3,
+        name: "loginWithMySql",
+        role: 3,
+      },
     ],
   },
   {

@@ -33,8 +33,24 @@ query($token: String){
 }
 `;
 
+const loginWithMySqlQuery = `
+query loginMySql($username: String, $password: String) {
+  loginMySql(username: $username, password: $password) {
+    id
+    username
+    name
+    phone
+    address
+    avatar
+    token
+    role
+  }
+}
+`;
+
 module.exports = {
   loginQuery,
   getUserInfoQuery,
   getUserRole,
+  loginWithMySqlQuery,
 };

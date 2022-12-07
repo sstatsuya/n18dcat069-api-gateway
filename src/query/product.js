@@ -24,6 +24,13 @@ query Product($productId: ID) {
     description
     splash
     images
+    comments {
+      id
+      userID
+      productID
+      content
+      time
+    }
   }
 }
 `;

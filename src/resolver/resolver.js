@@ -6,7 +6,8 @@ const {
   isValidCommand,
   encryptAES256,
 } = require("../common/helper");
-const { serviceList } = require("../common/service");
+// const { serviceList } = require("../common/service");
+const serviceList = require("../common/permission.json");
 
 const { URL } = require("../common/URL");
 const {
@@ -29,7 +30,11 @@ const {
   getAllOrdersQuery,
 } = require("../query/order");
 const { productsQuery, productQuery } = require("../query/product");
-const { loginQuery, getUserInfoQuery } = require("../query/user");
+const {
+  loginQuery,
+  getUserInfoQuery,
+  loginWithMySqlQuery,
+} = require("../query/user");
 
 const resolvers = {
   Query: {
@@ -88,7 +93,30 @@ const resolvers = {
                 }
               })
               .catch((err) => err.json());
-
+          case "loginWithMySql":
+            return fetch(URL.USER_SERVICE, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Accept: "application/json",
+              },
+              body: JSON.stringify({
+                query: loginWithMySqlQuery,
+                variables: {
+                  username: args.variables.username,
+                  password: args.variables.password,
+                },
+              }),
+            })
+              .then((res) => res.json())
+              .then((data) => {
+                console.log(JSON.stringify(data.data));
+                return {
+                  data: data.data,
+                };
+              })
+              .catch((err) => err.json());
+            return;
           case "getUserInfo":
             return fetch(URL.USER_SERVICE, {
               method: "POST",

@@ -90,7 +90,6 @@ const isValidCommand = async (
     return {
       isError: true,
       message: `You are not authorized to perform this action`,
-      // message: `You are not authorized to perform this action ${serviceName} ${serviceType} ${role} ${type.role}`,
     };
   }
 
